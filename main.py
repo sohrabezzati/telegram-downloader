@@ -9,6 +9,7 @@ connections directly to your flash card / USB drive or local disk.
 import argparse
 import asyncio
 import io
+import math
 import os
 import re
 import shutil
@@ -797,6 +798,49 @@ async def main():
                     f"[bold green]✓ Done:[/bold green] Saved to [dim]{target_path.name}[/dim] "
                     f"— [cyan]{format_size(speed)}/s[/cyan] in [cyan]{elapsed:.1f}s[/cyan]\n"
                 )
+            except errors.FloodWaitError as flood:
+                wait_sec = flood.seconds
+                wait_min = math.ceil(wait_sec / 60)
+                if target_path.exists() and target_path.stat().st_size == 0:
+                    try:
+                        target_path.unlink()
+                    except OSError:
+                        pass
+                console.print(
+                    f"\n[bold red]⚠️ Telegram Rate Limit (FloodWait):[/bold red] Telegram servers require a wait of "
+                    f"[bold yellow]{wait_sec} seconds (~{wait_min} minutes)[/bold yellow] "
+                    f"for cross-datacenter authorization.\n"
+                    f"[dim]Why this happens: Telegram temporarily throttles cross-datacenter connections "
+                    f"when transferring multiple files quickly.[/dim]\n"
+                )
+                if wait_sec <= 60:
+                    with console.status(f"[cyan]Waiting {wait_sec}s for rate limit to clear...[/cyan]", spinner="dots"):
+                        await asyncio.sleep(wait_sec + 1)
+                    # Retry this download
+                    try:
+                        await download_media_fast(
+                            client=client,
+                            message=item["message"],
+                            dest_path=str(target_path),
+                            progress_callback=update_progress,
+                            connections=args.workers,
+                        )
+                        elapsed = max(0.01, time.time() - file_start)
+                        speed = item["size"] / elapsed
+                        total_downloaded_bytes += item["size"]
+                        success_count += 1
+                        console.print(
+                            f"[bold green]✓ Done:[/bold green] Saved to [dim]{target_path.name}[/dim] "
+                            f"— [cyan]{format_size(speed)}/s[/cyan] in [cyan]{elapsed:.1f}s[/cyan]\n"
+                        )
+                    except Exception as retry_err:
+                        console.print(f"[bold red]✗ Failed to download on retry: {retry_err}[/bold red]\n")
+                else:
+                    console.print(
+                        f"[yellow]💡 Tip:[/yellow] Re-run with fewer workers (e.g. [bold]-w 4[/bold]) or download in smaller batches.\n"
+                        f"[dim]Download paused. You can re-run after {wait_min} minutes (completed files are skipped automatically).[/dim]\n"
+                    )
+                    break
             except Exception as exc:
                 console.print(f"[bold red]✗ Failed to download {item['filename']}: {exc}[/bold red]\n")
                 if target_path.exists() and target_path.stat().st_size == 0:

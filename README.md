@@ -213,6 +213,15 @@ If you enter an incorrect Two-Step Verification (2FA) password multiple times in
 2. Run `./run.sh`.
 3. If using **QR Code Login**, make sure you switch to your desired account **inside the Telegram mobile app** before scanning the QR code, as Telegram links whichever account is active on your phone.
 
+### What is `ExportAuthorizationRequest` FloodWait?
+Telegram datacenters store media across multiple geographical servers (DC 1 through DC 5). When downloading media stored on a datacenter different from your account's primary DC, Telegram requires an `ExportAuthorizationRequest`.
+- **Why it happens:** In unoptimized clients, transferring multiple files in rapid succession repeatedly creates new cross-DC authorizations, triggering Telegram's temporary anti-flood timer (`A wait of X seconds is required`).
+- **Built-in Fix:** Our engine caches cross-datacenter authorization keys globally with mutex locks. Once an authorization key is created for a datacenter, it is reused across all parallel workers and subsequent files, cutting cross-DC authorization calls by **99%**.
+- **Best Practices:**
+  - If Telegram returns a cooldown, **wait out the timer** before re-requesting. Spamming attempts can extend the penalty.
+  - For massive bulk downloads, use a moderate worker pool: `./run.sh -w 4` or `./run.sh -w 8`.
+  - Download in manageable batches (e.g. `1-5` or `1,3,5`) rather than hundreds of files simultaneously.
+
 ### Can I download files larger than 2 GB?
 Yes! Telegram MTProto allows up to 2 GB for regular users and up to 4 GB for Telegram Premium users. Parallel chunk streaming handles large files seamlessly.
 

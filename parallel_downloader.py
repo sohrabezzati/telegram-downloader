@@ -9,9 +9,9 @@ import inspect
 import logging
 import math
 import os
-from typing import Any, AsyncGenerator, BinaryIO, Callable, Optional, Union
+from typing import Any, AsyncGenerator, BinaryIO, Callable, Dict, Optional, Tuple, Union
 
-from telethon import TelegramClient, utils
+from telethon import TelegramClient, errors, utils
 from telethon.crypto import AuthKey
 from telethon.network import MTProtoSender
 from telethon.tl.alltlobjects import LAYER
@@ -21,6 +21,10 @@ from telethon.tl.functions.upload import GetFileRequest
 from telethon.tl.types import TypeInputFileLocation
 
 logger = logging.getLogger(__name__)
+
+# Global cache for foreign DC auth keys to avoid repeated ExportAuthorizationRequest FloodWait
+_GLOBAL_DC_AUTH_KEYS: Dict[Tuple[int, int], AuthKey] = {}
+_GLOBAL_DC_AUTH_LOCK = asyncio.Lock()
 
 
 class DownloadSender:
@@ -74,11 +78,11 @@ class ParallelTransferrer:
         self.client = client
         self.loop = self.client.loop
         self.dc_id = dc_id or self.client.session.dc_id
-        self.auth_key = (
-            None
-            if dc_id and self.client.session.dc_id != dc_id
-            else self.client.session.auth_key
-        )
+        session_dc = self.client.session.dc_id
+        if self.dc_id == session_dc:
+            self.auth_key = self.client.session.auth_key
+        else:
+            self.auth_key = _GLOBAL_DC_AUTH_KEYS.get((session_dc, self.dc_id))
         self.senders = []
 
     async def _cleanup(self) -> None:
@@ -88,7 +92,43 @@ class ParallelTransferrer:
 
     async def _create_sender(self) -> MTProtoSender:
         dc = await self.client._get_dc(self.dc_id)
-        sender = MTProtoSender(self.auth_key, loggers=self.client._log)
+        session_dc = self.client.session.dc_id
+        cache_key = (session_dc, self.dc_id)
+
+        # If connecting to a foreign DC and we don't have a cached auth key yet,
+        # acquire lock and export authorization ONCE for the entire application session.
+        if not self.auth_key and cache_key not in _GLOBAL_DC_AUTH_KEYS:
+            async with _GLOBAL_DC_AUTH_LOCK:
+                if cache_key in _GLOBAL_DC_AUTH_KEYS:
+                    self.auth_key = _GLOBAL_DC_AUTH_KEYS[cache_key]
+                else:
+                    sender = MTProtoSender(None, loggers=self.client._log)
+                    await sender.connect(
+                        self.client._connection(
+                            dc.ip_address,
+                            dc.port,
+                            dc.id,
+                            loggers=self.client._log,
+                            proxy=self.client._proxy,
+                        )
+                    )
+                    try:
+                        auth = await self.client(ExportAuthorizationRequest(self.dc_id))
+                        self.client._init_request.query = ImportAuthorizationRequest(
+                            id=auth.id, bytes=auth.bytes
+                        )
+                        req = InvokeWithLayerRequest(LAYER, self.client._init_request)
+                        await sender.send(req)
+                        self.auth_key = sender.auth_key
+                        _GLOBAL_DC_AUTH_KEYS[cache_key] = sender.auth_key
+                        return sender
+                    except Exception:
+                        await sender.disconnect()
+                        raise
+
+        # When auth_key is known (home DC or already cached foreign DC), connect with it directly
+        auth_key_to_use = self.auth_key or _GLOBAL_DC_AUTH_KEYS.get(cache_key)
+        sender = MTProtoSender(auth_key_to_use, loggers=self.client._log)
         await sender.connect(
             self.client._connection(
                 dc.ip_address,
@@ -98,14 +138,6 @@ class ParallelTransferrer:
                 proxy=self.client._proxy,
             )
         )
-        if not self.auth_key:
-            auth = await self.client(ExportAuthorizationRequest(self.dc_id))
-            self.client._init_request.query = ImportAuthorizationRequest(
-                id=auth.id, bytes=auth.bytes
-            )
-            req = InvokeWithLayerRequest(LAYER, self.client._init_request)
-            await sender.send(req)
-            self.auth_key = sender.auth_key
         return sender
 
     async def _create_download_sender(
@@ -259,6 +291,14 @@ async def download_media_fast(
                 connections=connections,
                 part_size_kb=512,
             )
+        except errors.FloodWaitError:
+            # Re-raise FloodWaitError immediately so UI can display cooldown and pause
+            if os.path.exists(dest_path):
+                try:
+                    os.remove(dest_path)
+                except OSError:
+                    pass
+            raise
         except Exception as exc:
             logger.warning(f"Parallel download failed ({exc}), falling back to standard download...")
             if os.path.exists(dest_path):
