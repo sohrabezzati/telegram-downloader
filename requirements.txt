@@ -1,0 +1,7 @@
+telethon>=1.36.0
+cryptg>=0.4.0
+tgcrypto>=1.2.5
+rich>=13.0.0
+python-dotenv>=1.0.0
+qrcode>=8.0
+
