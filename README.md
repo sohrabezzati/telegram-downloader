@@ -88,8 +88,8 @@ Telegram requires an `api_id` and `api_hash` to authorize MTProto client connect
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/sohrabezzati/telegram_downloder.git
-cd telegram_downloder
+git clone https://github.com/sohrabezzati/telegram-downloader.git
+cd telegram-downloader
 ```
 
 ### 2. Run the quick launcher
@@ -228,7 +228,7 @@ Yes! Telegram MTProto allows up to 2 GB for regular users and up to 4 GB for Tel
 
 ## ⭐ Show Your Support
 
-If this tool saved you time or boosted your download speeds, please give it a **⭐ Star** on [GitHub](https://github.com/sohrabezzati/telegram_downloder)! It helps others discover the project and motivates future enhancements.
+If this tool saved you time or boosted your download speeds, please give it a **⭐ Star** on [GitHub](https://github.com/sohrabezzati/telegram-downloader)! It helps others discover the project and motivates future enhancements.
 
 ---
 
