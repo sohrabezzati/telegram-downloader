@@ -37,11 +37,17 @@ async def main(page: ft.Page) -> None:
     page.title = "Telegram High-Speed Downloader Pro"
     page.theme_mode = ft.ThemeMode.DARK
     page.theme = get_theme("dark")
-    page.window.width = 1100
-    page.window.height = 760
-    page.window.min_width = 850
-    page.window.min_height = 600
+    if hasattr(page, "window") and page.window:
+        page.window.width = 1100
+        page.window.height = 760
+        page.window.min_width = 850
+        page.window.min_height = 600
     page.padding = 0
+
+    def notify(msg: str, color=AppColors.SUCCESS):
+        sb = ft.SnackBar(ft.Text(msg), bgcolor=color, open=True)
+        page.overlay.append(sb)
+        page.update()
 
     # Start the parallel download engine loop
     download_engine.start()
@@ -74,18 +80,14 @@ async def main(page: ft.Page) -> None:
                 qr_dialog.open = False
             header.update_account(profile.display_name, profile.username)
             asyncio.create_task(explorer_view.load_dialogs())
-            page.snack_bar = ft.SnackBar(ft.Text(f"Logged in as {profile.display_name}!"), bgcolor=AppColors.SUCCESS)
-            page.snack_bar.open = True
-            page.update()
+            notify(f"Logged in as {profile.display_name}!", AppColors.SUCCESS)
 
         def on_password_needed(_):
             if qr_dialog:
                 qr_dialog.show_2fa_prompt()
 
         def on_error(err: str):
-            page.snack_bar = ft.SnackBar(ft.Text(f"Login error: {err}"), bgcolor=AppColors.ERROR)
-            page.snack_bar.open = True
-            page.update()
+            notify(f"Login error: {err}", AppColors.ERROR)
 
         asyncio.create_task(
             auth_mgr.start_qr_login(
@@ -105,12 +107,9 @@ async def main(page: ft.Page) -> None:
                 if auth_mgr.current_user:
                     header.update_account(auth_mgr.current_user.display_name, auth_mgr.current_user.username)
                 asyncio.create_task(explorer_view.load_dialogs())
-                page.snack_bar = ft.SnackBar(ft.Text("2FA Verification Successful!"), bgcolor=AppColors.SUCCESS)
-                page.snack_bar.open = True
+                notify("2FA Verification Successful!", AppColors.SUCCESS)
             else:
-                page.snack_bar = ft.SnackBar(ft.Text(f"2FA Failed: {err}"), bgcolor=AppColors.ERROR)
-                page.snack_bar.open = True
-            page.update()
+                notify(f"2FA Failed: {err}", AppColors.ERROR)
 
         asyncio.create_task(_verify())
 
@@ -134,9 +133,7 @@ async def main(page: ft.Page) -> None:
                 ft.Text("Logged out. Link your account to view channels.", color=AppColors.TEXT_MUTED)
             ]
             explorer_view.media_list_column.controls.clear()
-            page.snack_bar = ft.SnackBar(ft.Text("Unlinked account successfully."), bgcolor=AppColors.INFO)
-            page.snack_bar.open = True
-            page.update()
+            notify("Unlinked account successfully.", AppColors.INFO)
 
         asyncio.create_task(_do_logout())
 

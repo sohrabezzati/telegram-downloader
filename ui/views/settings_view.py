@@ -176,7 +176,7 @@ class SettingsView(ft.Container):
                     [
                         ft.Row(
                             [
-                                ft.Icon(ft.Icons.USB if drive.is_removable else ft.Icons.HARD_DRIVE, color=AppColors.PRIMARY),
+                                ft.Icon(ft.Icons.USB if drive.is_removable else ft.Icons.STORAGE, color=AppColors.PRIMARY),
                                 ft.Column(
                                     [
                                         ft.Text(drive.name, size=13, weight=ft.FontWeight.BOLD),

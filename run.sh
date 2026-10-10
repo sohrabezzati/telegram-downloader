@@ -21,5 +21,9 @@ if [[ "$1" == "--cli" || "$1" == "-c" || "$1" == "--channel" || "$1" == "--logou
     fi
     python3 main.py "$@"
 else
+    if [[ "$1" == "--mobile" || "$1" == "--web" ]]; then
+        # Free port 8550 if a stale process is holding it
+        lsof -ti:8550 | xargs kill -9 2>/dev/null || true
+    fi
     python3 app.py "$@"
 fi
