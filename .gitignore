@@ -49,7 +49,7 @@ wheels/
 ehthumbs.db
 Thumbs.db
 
-# Media files
+# Media & local config files
 *.mp4
 *.mkv
 *.avi
@@ -58,4 +58,6 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.bin
+app_config.json
+*.png
 

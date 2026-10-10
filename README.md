@@ -97,14 +97,37 @@ The included `run.sh` script automatically creates a Python virtual environment 
 
 ```bash
 chmod +x run.sh
+
+# 🖥️ Launch the Modern Desktop & Mobile UI (Flet / Flutter)
 ./run.sh
+
+# 📟 Or launch the Terminal CLI
+./run.sh --cli
 ```
 
 *(Manual setup alternative: `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`)*
 
 ---
 
-## 🎮 Usage Guide
+## 🎨 Modern GUI App & Dual Login Modes
+
+The application features a modern dark-mode user interface powered by **Flet (Flutter for Python)**:
+
+1. **🤖 Bot Forwarding Mode (Zero Credentials)**:
+   - User forwards any video, audio, or document from ANY channel/chat to your personal Telegram Bot.
+   - The file instantly pops up in the app's **Download Queue** with 1-click 16x download!
+2. **📱 Full Account Sync (QR Code Device Link)**:
+   - Click **Link Account (QR)** in the top bar.
+   - Scan with your mobile phone (*Telegram ➔ Settings ➔ Devices ➔ Link Desktop Device*).
+   - Unlocks the **Channel Explorer** to browse all private channels, groups, and Saved Messages with duplicate detection!
+3. **⚡ Live Telemetry HUD**:
+   - Real-time speedometer (MB/s), ETA countdown, and 16-worker striped chunk visualizer.
+4. **💾 USB & External Drive Auto-Detection**:
+   - Automatically detects connected flash drives with free space validation before downloading.
+
+---
+
+## 🎮 Terminal CLI Usage Guide
 
 ### First Launch
 1. On your first run, you will be prompted for your **API ID** and **API HASH** (saved locally to `.env`).
