@@ -61,11 +61,16 @@ class AuthManager:
         self._active_qr = None
         self._is_connecting = False
 
-    def get_client(self) -> TelegramClient:
-        """Get or initialize the shared Telethon client."""
-        if self.client is None:
+    def get_client(self, force_new: bool = False) -> TelegramClient:
+        """Get or initialize the shared Telethon client, recreating if logged out."""
+        if self.client is None or getattr(self.client, "session", None) is None or force_new:
             if not TG_API_ID or not TG_API_HASH:
                 raise ValueError("TG_API_ID and TG_API_HASH must be set in .env or environment")
+            if self.client is not None:
+                try:
+                    self.client.disconnect()
+                except Exception:
+                    pass
             self.client = TelegramClient(self.session_name, int(TG_API_ID), TG_API_HASH)
         return self.client
 
@@ -73,7 +78,11 @@ class AuthManager:
         """Connect the client to Telegram servers."""
         client = self.get_client()
         if not client.is_connected():
-            await client.connect()
+            try:
+                await client.connect()
+            except ValueError:
+                client = self.get_client(force_new=True)
+                await client.connect()
         return client.is_connected()
 
     async def is_authorized(self) -> bool:
@@ -81,7 +90,11 @@ class AuthManager:
         try:
             client = self.get_client()
             if not client.is_connected():
-                await client.connect()
+                try:
+                    await client.connect()
+                except ValueError:
+                    client = self.get_client(force_new=True)
+                    await client.connect()
             auth = await client.is_user_authorized()
             if auth and self.current_user is None:
                 await self.load_user_profile()
@@ -134,7 +147,11 @@ class AuthManager:
         """Initiate Telegram QR Code Device Linking flow."""
         client = self.get_client()
         if not client.is_connected():
-            await client.connect()
+            try:
+                await client.connect()
+            except ValueError:
+                client = self.get_client(force_new=True)
+                await client.connect()
 
         try:
             qr_login = await client.qr_login()
@@ -184,18 +201,20 @@ class AuthManager:
     async def logout(self) -> bool:
         """Cleanly log out of current Telegram user session."""
         try:
-            client = self.get_client()
-            if client.is_connected():
+            client = self.client
+            if client and client.is_connected():
                 await client.log_out()
+        except Exception as e:
+            print(f"[AuthManager] Logout error: {e}")
+            return False
+        finally:
+            self.client = None
             self.current_user = None
             # Remove session file
             session_file = Path(f"{self.session_name}.session")
             if session_file.exists():
                 session_file.unlink()
-            return True
-        except Exception as e:
-            print(f"[AuthManager] Logout error: {e}")
-            return False
+        return True
 
 
 auth_mgr = AuthManager()
