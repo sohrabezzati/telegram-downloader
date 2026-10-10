@@ -161,9 +161,6 @@ async def main(page: ft.Page) -> None:
         on_logout=on_logout,
     )
 
-    # Attach file picker to page overlay
-    page.overlay.append(settings_view.folder_picker)
-
     # Dynamic Queue updates listener
     def on_queue_event(task: DownloadTask):
         speed_hud.update_task(download_engine._current_task)

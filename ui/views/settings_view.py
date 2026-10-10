@@ -29,21 +29,19 @@ class SettingsView(ft.Container):
         self.expand = True
         self.padding = ft.padding.all(20)
 
-        # File picker for folder selection
-        self.folder_picker = ft.FilePicker(on_result=self._on_folder_picked)
-
         # Storage directory controls
         self.path_input = ft.TextField(
             label="Download Destination Directory",
             value=str(config.download_dir),
             expand=True,
-            read_only=True,
+            on_change=self._on_path_changed,
         )
 
-        self.browse_btn = ft.OutlinedButton(
-            text="Browse...",
-            icon=ft.Icons.FOLDER_OPEN,
-            on_click=lambda _: self.folder_picker.get_directory_path(dialog_title="Select Download Folder"),
+        self.reset_path_btn = ft.OutlinedButton(
+            text="Default Folder",
+            icon=ft.Icons.FOLDER_SPECIAL,
+            tooltip="Reset to ~/Downloads/TelegramDownloader",
+            on_click=self._on_reset_default_path,
         )
 
         # Template dropdown
@@ -105,7 +103,7 @@ class SettingsView(ft.Container):
                     content=ft.Column(
                         [
                             ft.Text("📁 Storage & Organization", size=15, weight=ft.FontWeight.BOLD),
-                            ft.Row([self.path_input, self.browse_btn], spacing=10),
+                            ft.Row([self.path_input, self.reset_path_btn], spacing=10),
                             self.template_dropdown,
                             ft.Divider(height=5, color="transparent"),
                             ft.Text("Detected USB Drives & Volumes:", size=13, color=AppColors.TEXT_MUTED),
@@ -210,13 +208,20 @@ class SettingsView(ft.Container):
             self.on_settings_saved()
         self.update()
 
-    def _on_folder_picked(self, e: ft.FilePickerResultEvent) -> None:
-        if e.path:
-            config.set("download_dir", e.path)
-            self.path_input.value = e.path
+    def _on_path_changed(self, e) -> None:
+        val = (e.control.value or "").strip()
+        if val:
+            config.set("download_dir", val)
             if self.on_settings_saved:
                 self.on_settings_saved()
-            self.update()
+
+    def _on_reset_default_path(self, _) -> None:
+        default_dir = str(Path.home() / "Downloads" / "TelegramDownloader")
+        config.set("download_dir", default_dir)
+        self.path_input.value = default_dir
+        if self.on_settings_saved:
+            self.on_settings_saved()
+        self.update()
 
     def _on_template_changed(self, e) -> None:
         config.set("organization_template", e.control.value)

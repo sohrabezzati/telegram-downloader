@@ -26,6 +26,10 @@ if hasattr(ft, "Alignment"):
     ft.alignment.bottom_left = ft.Alignment.BOTTOM_LEFT
     ft.alignment.bottom_right = ft.Alignment.BOTTOM_RIGHT
 
+# ImageFit -> BoxFit alias
+if hasattr(ft, "BoxFit"):
+    ft.ImageFit = ft.BoxFit
+
 # Patch buttons to accept text=... as content and expose .text property
 for _btn_cls in [ft.FilledButton, ft.OutlinedButton, ft.TextButton]:
     _orig_init = _btn_cls.__init__

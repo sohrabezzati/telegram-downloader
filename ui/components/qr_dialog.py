@@ -33,7 +33,7 @@ class QRLoginDialog(ft.AlertDialog):
             src="",
             width=220,
             height=220,
-            fit=ft.ImageFit.CONTAIN,
+            fit="contain",
             border_radius=10,
         )
 
