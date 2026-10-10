@@ -279,5 +279,60 @@ async def main(page: ft.Page) -> None:
     asyncio.create_task(auto_init())
 
 
+def get_lan_ip() -> str:
+    """Detect local Wi-Fi IP address for mobile phone access."""
+    import socket
+    import subprocess
+    for iface in ["en0", "en1"]:
+        try:
+            res = subprocess.check_output(["ipconfig", "getifaddr", iface], text=True).strip()
+            if res:
+                return res
+        except Exception:
+            pass
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
 if __name__ == "__main__":
-    ft.app(target=main)
+    import sys
+
+    is_mobile_mode = "--mobile" in sys.argv or "--web" in sys.argv
+
+    if is_mobile_mode:
+        lan_ip = get_lan_ip()
+        mobile_url = f"http://{lan_ip}:8550"
+        print("\n" + "=" * 55)
+        print("📱 TELEGRAM DOWNLOADER - MOBILE ACCESS MODE")
+        print("=" * 55)
+        print(f"To open on your iPhone or Android phone:")
+        print(f"👉 URL: {mobile_url}\n")
+        try:
+            import qrcode
+            qr = qrcode.QRCode()
+            qr.add_data(mobile_url)
+            qr.print_ascii(invert=True)
+            print("\n📷 Point your phone's camera at this QR code to open!")
+        except Exception:
+            pass
+        print("=" * 55 + "\n")
+
+        os.environ["FLET_FORCE_WEB_SERVER"] = "true"
+        os.environ["FLET_SERVER_IP"] = "0.0.0.0"
+        os.environ["FLET_SERVER_PORT"] = "8550"
+
+        if hasattr(ft, "run"):
+            ft.run(main, host="0.0.0.0", port=8550, view=ft.AppView.WEB_BROWSER)
+        else:
+            ft.app(target=main, host="0.0.0.0", port=8550, view=ft.AppView.WEB_BROWSER)
+    else:
+        if hasattr(ft, "run"):
+            ft.run(main)
+        else:
+            ft.app(target=main)
