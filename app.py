@@ -44,6 +44,12 @@ async def main(page: ft.Page) -> None:
         page.window.min_height = 600
     page.padding = 0
 
+    # Register clipboard service for 1-tap copy
+    try:
+        page.services.append(ft.Clipboard())
+    except Exception:
+        pass
+
     def notify(msg: str, color=AppColors.SUCCESS):
         sb = ft.SnackBar(ft.Text(msg), bgcolor=color, open=True)
         page.overlay.append(sb)
@@ -73,7 +79,7 @@ async def main(page: ft.Page) -> None:
 
         def on_qr_url(url: str, b64_img: str):
             if qr_dialog:
-                qr_dialog.set_qr(b64_img)
+                qr_dialog.set_qr(b64_img, raw_url=url)
 
         def on_success(profile: UserProfile):
             if qr_dialog:
