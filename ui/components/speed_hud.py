@@ -127,4 +127,7 @@ class SpeedHUD(ft.Container):
             self.pause_btn.visible = True
             self.cancel_btn.visible = True
 
-        self.update()
+        try:
+            self.update()
+        except Exception:
+            pass

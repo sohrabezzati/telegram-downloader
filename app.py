@@ -172,18 +172,6 @@ async def main(page: ft.Page) -> None:
     queue_mgr.register_listener(on_queue_event)
     bot_mgr.set_callback(lambda _: queue_view.refresh_tasks())
 
-    # Storage HUD refresher
-    def update_storage_hud():
-        try:
-            target = config.download_dir
-            usage = shutil.disk_usage(target)
-            free_gb = usage.free / (1024 ** 3)
-            header.update_storage(f"{free_gb:.1f} GB")
-        except Exception:
-            header.update_storage("N/A")
-
-    update_storage_hud()
-
     # View switcher container
     content_area = ft.Container(content=queue_view, expand=True)
 
@@ -235,7 +223,7 @@ async def main(page: ft.Page) -> None:
         on_change=lambda e: switch_view(e.control.selected_index),
     )
 
-    # Master Layout
+    # Master Layout - Mount controls to page first
     page.add(
         ft.Column(
             [
@@ -254,6 +242,18 @@ async def main(page: ft.Page) -> None:
             spacing=0,
         )
     )
+
+    # Storage HUD refresher (now safe because header is mounted on page)
+    def update_storage_hud():
+        try:
+            target = config.download_dir
+            usage = shutil.disk_usage(target)
+            free_gb = usage.free / (1024 ** 3)
+            header.update_storage(f"{free_gb:.1f} GB")
+        except Exception:
+            header.update_storage("N/A")
+
+    update_storage_hud()
 
     # Auto-initialize session & bot if available
     async def auto_init():

@@ -114,7 +114,10 @@ class AppHeader(ft.Container):
             self.account_btn.icon = ft.Icons.QR_CODE_SCANNER
             self.account_btn.style.color = AppColors.PRIMARY
             self.account_btn.style.side = ft.BorderSide(1, AppColors.PRIMARY)
-        self.update()
+        try:
+            self.update()
+        except Exception:
+            pass
 
     def update_bot_status(self, is_running: bool, bot_username: Optional[str] = None) -> None:
         """Update the bot status chip."""
@@ -135,7 +138,10 @@ class AppHeader(ft.Container):
                 ],
                 spacing=5,
             )
-        self.update()
+        try:
+            self.update()
+        except Exception:
+            pass
 
     def update_storage(self, free_text: str) -> None:
         """Update drive free space label."""
@@ -146,4 +152,7 @@ class AppHeader(ft.Container):
             ],
             spacing=5,
         )
-        self.update()
+        try:
+            self.update()
+        except Exception:
+            pass

@@ -33,7 +33,7 @@ class QueueView(ft.Container):
 
         # Action bar
         self.filter_buttons = ft.SegmentedButton(
-            selected={"ALL"},
+            selected=["ALL"],
             allow_multiple_selection=False,
             segments=[
                 ft.Segment(value="ALL", label=ft.Text("All Tasks")),

@@ -64,6 +64,18 @@ def _wrapped_opt_init(self, *args, **kwargs):
     _orig_opt_init(self, *args, **kwargs)
 ft.DropdownOption.__init__ = _wrapped_opt_init
 
+# Safe Control.update guard to prevent unmounted runtime errors
+if hasattr(ft, "Control") and hasattr(ft.Control, "update"):
+    _orig_control_update = ft.Control.update
+    def _safe_control_update(self, *args, **kwargs):
+        try:
+            return _orig_control_update(self, *args, **kwargs)
+        except RuntimeError as e:
+            if "added to the page first" in str(e):
+                return None
+            raise
+    ft.Control.update = _safe_control_update
+
 
 class AppColors:
     # Primary Telegram Blue accents
