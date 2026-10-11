@@ -177,5 +177,8 @@ class QueueManager:
     def get_completed_tasks(self) -> List[DownloadTask]:
         return [t for t in self.tasks if t.status == TaskStatus.COMPLETED]
 
+    def get_all_tasks(self) -> List[DownloadTask]:
+        return list(self.tasks)
+
 
 queue_mgr = QueueManager()

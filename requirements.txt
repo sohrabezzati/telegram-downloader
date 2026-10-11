@@ -5,4 +5,6 @@ rich>=13.0.0
 python-dotenv>=1.0.0
 qrcode>=8.0
 pillow>=10.0.0
-flet>=1.0.0
+fastapi>=0.115.0
+uvicorn>=0.30.0
+websockets>=12.0

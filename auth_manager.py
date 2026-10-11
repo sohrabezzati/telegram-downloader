@@ -12,7 +12,7 @@ import io
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import qrcode
 from dotenv import load_dotenv
@@ -20,6 +20,9 @@ from telethon import TelegramClient
 from telethon.errors import (
     FloodWaitError,
     PasswordHashInvalidError,
+    PhoneCodeExpiredError,
+    PhoneCodeInvalidError,
+    PhoneNumberInvalidError,
     PhonePasswordFloodError,
     SessionPasswordNeededError,
 )
@@ -60,6 +63,8 @@ class AuthManager:
         self._qr_login_task: Optional[asyncio.Task] = None
         self._active_qr = None
         self._is_connecting = False
+        self._phone: Optional[str] = None
+        self._phone_code_hash: Optional[str] = None
 
     def get_client(self, force_new: bool = False) -> TelegramClient:
         """Get or initialize the shared Telethon client, recreating if logged out."""
@@ -183,6 +188,62 @@ class AuthManager:
                     return
         except Exception as e:
             on_error(str(e))
+
+    async def send_phone_code(self, phone: str) -> Tuple[bool, Optional[str]]:
+        """Send verification code request to user's phone number.
+        
+        Telegram delivers this 5-digit code directly to the user's active Telegram app sessions.
+        """
+        client = self.get_client()
+        if not client.is_connected():
+            try:
+                await client.connect()
+            except ValueError:
+                client = self.get_client(force_new=True)
+                await client.connect()
+
+        clean_phone = phone.strip().replace(" ", "").replace("-", "")
+        if not clean_phone.startswith("+"):
+            clean_phone = f"+{clean_phone}"
+
+        try:
+            res = await client.send_code_request(clean_phone)
+            self._phone = clean_phone
+            self._phone_code_hash = res.phone_code_hash
+            return True, None
+        except PhoneNumberInvalidError:
+            return False, "The phone number entered is invalid. Please include international country code (e.g. +1...)."
+        except FloodWaitError as e:
+            return False, f"Telegram flood wait: please wait {e.seconds} seconds before trying again."
+        except Exception as e:
+            return False, str(e)
+
+    async def sign_in_code(self, code: str) -> Tuple[bool, bool, Optional[str]]:
+        """Sign in using the code sent by Telegram.
+        
+        Returns:
+            Tuple of (success: bool, needs_2fa: bool, error_msg: Optional[str])
+        """
+        if not self._phone or not self._phone_code_hash:
+            return False, False, "No active phone code request found. Please request a new code."
+
+        clean_code = code.strip().replace(" ", "").replace("-", "")
+        client = self.get_client()
+
+        try:
+            await client.sign_in(self._phone, clean_code, phone_code_hash=self._phone_code_hash)
+            await self.load_user_profile()
+            return True, False, None
+        except SessionPasswordNeededError:
+            return False, True, None
+        except PhoneCodeInvalidError:
+            return False, False, "Invalid verification code. Please check your Telegram in-app messages."
+        except PhoneCodeExpiredError:
+            return False, False, "Verification code has expired. Please request a new code."
+        except FloodWaitError as e:
+            return False, False, f"Telegram flood wait: please wait {e.seconds} seconds."
+        except Exception as e:
+            return False, False, str(e)
 
     async def submit_2fa_password(self, password: str) -> Tuple[bool, Optional[str]]:
         """Submit 2FA password after QR scan prompt."""

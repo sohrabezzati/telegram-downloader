@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quick launcher for Telegram High-Speed Downloader Pro
+# Quick launcher for Telegram High-Speed Downloader (Flutter + Python FastAPI)
 set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -14,16 +14,49 @@ else
     source .venv/bin/activate
 fi
 
-# If CLI argument or terminal flags are supplied, run terminal main.py
+# 1. Classic Terminal CLI mode
 if [[ "$1" == "--cli" || "$1" == "-c" || "$1" == "--channel" || "$1" == "--logout" ]]; then
     if [[ "$1" == "--cli" ]]; then
         shift
     fi
     python3 main.py "$@"
-else
-    if [[ "$1" == "--mobile" || "$1" == "--web" ]]; then
-        # Free port 8550 if a stale process is holding it
-        lsof -ti:8550 | xargs kill -9 2>/dev/null || true
-    fi
-    python3 app.py "$@"
+    exit 0
 fi
+
+# 2. Native Flutter GUI mode (Desktop or connected device)
+if [[ "$1" == "--flutter" || "$1" == "--app" ]]; then
+    shift
+    echo "Starting Native Flutter App..."
+    cd frontend && flutter run "$@"
+    exit 0
+fi
+
+# 3. Default / Mobile / Web Server Mode
+PORT=8000
+lsof -ti:$PORT | xargs kill -9 2>/dev/null || true
+
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "127.0.0.1")
+URL="http://${LOCAL_IP}:${PORT}"
+
+echo ""
+echo "======================================================="
+echo "⚡ TELEGRAM HIGH-SPEED DOWNLOADER (FLUTTER + FASTAPI)"
+echo "======================================================="
+echo "👉 Open on your Phone, Tablet or PC:"
+echo "   $URL"
+echo ""
+
+# Generate ASCII terminal QR code for convenient mobile phone scanning
+python3 -c "
+import qrcode
+qr = qrcode.QRCode(border=1)
+qr.add_data('$URL')
+qr.make(fit=True)
+qr.print_ascii(invert=True)
+" 2>/dev/null || true
+
+echo "📷 Point your phone's camera at this QR code to open!"
+echo "======================================================="
+echo ""
+
+python3 server.py

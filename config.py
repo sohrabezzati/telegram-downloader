@@ -89,6 +89,14 @@ class ConfigManager:
         return max(1, min(val, 32))
 
     @property
+    def parallel_workers(self) -> int:
+        return self.workers
+
+    @parallel_workers.setter
+    def parallel_workers(self, val: int) -> None:
+        self.set("workers", val)
+
+    @property
     def bot_token(self) -> str:
         # Check config first, fallback to os.environ
         token = self.get("bot_token", "").strip()
