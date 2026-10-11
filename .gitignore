@@ -10,13 +10,13 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
+/build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -59,5 +59,4 @@ Thumbs.db
 *.tar.gz
 *.bin
 app_config.json
-*.png
 
