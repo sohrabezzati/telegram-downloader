@@ -1,0 +1,78 @@
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache & build
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+/build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+/lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Telegram Sessions & Credentials (STRICTLY PRIVATE)
+*.session
+*.session-journal
+.env
+.env.*
+!.env.example
+
+# IDE, Editor & History
+.history/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Media & local config files
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.qt
+*.zip
+*.tar.gz
+*.bin
+app_config.json
+
+
+# Android release signing: local only
+.signing/
+artifacts/
+*.jks
+*.keystore
+frontend/android/key.properties
+frontend/android/build/
+frontend/android/telegram.properties
+*.session-wal
+*.session-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.apk
+*.aab
